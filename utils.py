@@ -14,9 +14,9 @@ def generate_slug(title):
 
 def extract_keywords(text):
     """
-    Extrahiert Schlüsselwörter aus einem Text (z. B. durch Entfernen von Stopwörtern).
+    Einfacher Keyword-Extractor ohne NLTK-Tokenizer-Bug.
     """
-    words = word_tokenize(text)
     stop_words = set(stopwords.words('english'))
-    keywords = [word for word in words if word.isalnum() and word not in stop_words]
-    return keywords
+    words = re.findall(r'\b\w+\b', text.lower())
+    keywords = [word for word in words if word not in stop_words and len(word) > 2]
+    return list(set(keywords))[:10]  # max 10 Keywords
