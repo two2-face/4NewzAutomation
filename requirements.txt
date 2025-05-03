@@ -1,3 +1,4 @@
 requests
 nltk
 feedparser
+flask
