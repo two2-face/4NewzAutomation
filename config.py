@@ -5,6 +5,6 @@ WP_URL = "https://4newz.com"
 WP_USER = "musadogan"
 WP_PASSWORD = "vvJy 8lLy Wokr vk8x iyKS SbC3"
 RSS_FEEDS = [
-    ""https://www.theverge.com/rss/index.xml",
+    "https://www.theverge.com/rss/index.xml",
     "https://www.techradar.com/rss"
 ]
