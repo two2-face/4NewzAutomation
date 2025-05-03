@@ -1,49 +1,43 @@
 import requests
-import config
-from requests.auth import HTTPBasicAuth
+from config import WP_URL, WP_USER, WP_PASSWORD
+from utils import generate_slug
 
-def create_or_get_tag_id(tag_name):
-    """
-    Holt die ID eines bestehenden Tags oder erstellt einen neuen.
-    """
-    url = f"{config.WORDPRESS_URL}/wp-json/wp/v2/tags"
-    auth = HTTPBasicAuth(config.WP_USERNAME, config.WP_APP_PASSWORD)
+def post_to_wordpress(title, content, keywords, image_url, alt_text):
+    # Upload Image
+    image_response = requests.get(image_url)
+    image_data = image_response.content
+    media = requests.post(
+        f"{WP_URL}/wp-json/wp/v2/media",
+        headers={
+            "Content-Disposition": f'attachment; filename="{generate_slug(title)}.jpg"',
+        },
+        auth=(WP_USER, WP_PASSWORD),
+        files={"file": image_data},
+        data={"alt_text": alt_text}
+    )
+    
+    if media.status_code != 201:
+        print("Bild konnte nicht hochgeladen werden:", media.text)
+        return
 
-    # Suche nach Tag
-    response = requests.get(url, params={"search": tag_name}, auth=auth)
-    if response.status_code == 200 and response.json():
-        return response.json()[0]["id"]
+    media_id = media.json()["id"]
 
-    # Tag existiert nicht – erstelle
-    response = requests.post(url, json={"name": tag_name}, auth=auth)
-    if response.status_code == 201:
-        return response.json()["id"]
-
-    print(f"⚠️ Fehler beim Erstellen des Tags '{tag_name}': {response.text}")
-    return None
-
-def post_to_wordpress(post_data):
-    """
-    Veröffentlicht einen Beitrag auf WordPress mit Tag-IDs.
-    """
-    endpoint = f"{config.WORDPRESS_URL}/wp-json/wp/v2/posts"
-    headers = {"Content-Type": "application/json"}
-    auth = HTTPBasicAuth(config.WP_USERNAME, config.WP_APP_PASSWORD)
-
-    # Wandle Tags in IDs um
-    tag_ids = []
-    for tag in post_data["tags"]:
-        tag_id = create_or_get_tag_id(tag)
-        if tag_id:
-            tag_ids.append(tag_id)
-
-    data = {
-        "title": post_data["title"],
-        "content": post_data["content"],
+    # Post Article
+    post_data = {
+        "title": title,
+        "content": content,
         "status": "publish",
-        "slug": post_data["slug"],
-        "tags": tag_ids
+        "featured_media": media_id,
+        "tags": [],  # Optional: ID-basierte Tags
     }
 
-    response = requests.post(endpoint, json=data, headers=headers, auth=auth)
-    return response
+    post = requests.post(
+        f"{WP_URL}/wp-json/wp/v2/posts",
+        auth=(WP_USER, WP_PASSWORD),
+        json=post_data
+    )
+
+    if post.status_code != 201:
+        print("❌ Fehler beim Posten:", post.text)
+    else:
+        print(f"✅ Artikel veröffentlicht: {post.json()['link']}")
