@@ -35,5 +35,17 @@ Summary: {summary}
             "max_tokens": 7000
         }
     )
+response = requests.post(API_URL, headers=headers, json=payload)
+data = response.json()
+
+# Debug-Ausgabe einbauen
+print("Antwort von OpenAI:", data)
+
+if "choices" not in data:
+    raise Exception(f"Fehler in API-Antwort: {data}")
+
+return data["choices"][0]["message"]["content"]
+
+    
     data = response.json()
     return data["choices"][0]["message"]["content"]
