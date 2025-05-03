@@ -1,38 +1,27 @@
+from config import RSS_FEEDS
 from rss_parser import get_latest_articles
-from text_generator import summarize_article
-from image_fetcher import get_image_url
+from text_generator import generate_article
+from image_fetcher import fetch_featured_image
 from wp_poster import post_to_wordpress
-from utils import generate_slug, extract_keywords
-import config
+from utils import mark_article_as_posted
 
 def main():
     print("🔄 Lade neue Artikel...")
-    articles = get_latest_articles(config.RSS_FEEDS)
+    articles = get_latest_articles(RSS_FEEDS)
 
     for article in articles:
-        title = article['title']
-        link = article['link']
-        summary = summarize_article(article['summary'])
-        slug = generate_slug(title)
-        keywords = extract_keywords(summary)
-        tags = ', '.join(keywords)
-        image_url, alt_text = get_image_url(title)
+        print(f"📤 Verarbeite: {article['title']}")
+        
+        # Keywords grob aus Titel (ersetzbar durch NLP später)
+        keywords = article["title"].lower().split()[:5]
 
-        post_data = {
-            "title": title,
-            "content": f"<img src='{image_url}' alt='{alt_text}'/><p>{summary}</p><p>Quelle: <a href='{link}'>{link}</a></p>",
-            "slug": slug,
-            "tags": keywords,
-            "image_alt": alt_text,
-        }
+        # SEO-gerechter Artikel erzeugen
+        content = generate_article(article["title"], article["summary"], keywords)
 
-        print(f"📤 Veröffentliche: {title}")
-        response = post_to_wordpress(post_data)
-
-        if response.status_code == 201:
-            print(f"✅ Erfolgreich veröffentlicht: {title}")
+        # Bild suchen + Alt-Text
+        image_url, alt_text = fetch_featured_image(article["title"])
+        if image_url:
+            post_to_wordpress(article["title"], content, keywords, image_url, alt_text)
+            mark_article_as_posted(article["id"])
         else:
-            print(f"❌ Fehler: {response.status_code} - {response.text}")
-
-if __name__ == "__main__":
-    main()
+            print("⚠️ Kein passendes Bild gefunden. Artikel wird übersprungen.")
