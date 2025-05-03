@@ -1,22 +1,28 @@
-import re
-import nltk
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
-nltk.download('punkt')
-nltk.download('stopwords')
+import json
+import hashlib
+import os
 
-def generate_slug(title):
-    """
-    Erzeugt einen URL-freundlichen Slug aus dem Titel.
-    """
-    slug = re.sub(r'\W+', '-', title.lower())
-    return slug
+POSTED_FILE = "posted_articles.json"
 
-def extract_keywords(text):
-    """
-    Einfacher Keyword-Extractor ohne NLTK-Tokenizer-Bug.
-    """
-    stop_words = set(stopwords.words('english'))
-    words = re.findall(r'\b\w+\b', text.lower())
-    keywords = [word for word in words if word not in stop_words and len(word) > 2]
-    return list(set(keywords))[:10]  # max 10 Keywords
+def generate_slug(text):
+    return text.lower().replace(" ", "-")
+
+def generate_article_id(title, link):
+    return hashlib.md5(f"{title}-{link}".encode("utf-8")).hexdigest()
+
+def is_article_posted(article_id):
+    if not os.path.exists(POSTED_FILE):
+        return False
+    with open(POSTED_FILE, "r") as f:
+        posted = json.load(f)
+    return article_id in posted
+
+def mark_article_as_posted(article_id):
+    if not os.path.exists(POSTED_FILE):
+        posted = []
+    else:
+        with open(POSTED_FILE, "r") as f:
+            posted = json.load(f)
+    posted.append(article_id)
+    with open(POSTED_FILE, "w") as f:
+        json.dump(posted, f)
