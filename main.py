@@ -25,3 +25,6 @@ def main():
             mark_article_as_posted(article["id"])
         else:
             print("⚠️ Kein passendes Bild gefunden. Artikel wird übersprungen.")
+
+if __name__ == "__main__":
+    main()
